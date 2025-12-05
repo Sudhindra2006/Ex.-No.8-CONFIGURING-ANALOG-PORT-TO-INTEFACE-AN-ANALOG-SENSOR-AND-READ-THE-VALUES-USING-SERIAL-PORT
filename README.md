@@ -151,23 +151,15 @@ This module also includes a potentiometer that will fix the threshold value, & t
 
 ##  Program 
 ```
+/* USER CODE BEGIN Header */
 /**
   ******************************************************************************
-  * @file      startup_stm32g071xx.s
-  * @author    MCD Application Team
-  * @brief     STM32G071xx devices vector table GCC toolchain.
-  *            This module performs:
-  *                - Set the initial SP
-  *                - Set the initial PC == Reset_Handler,
-  *                - Set the vector table entries with the exceptions ISR address
-  *                - Branches to main in the C library (which eventually
-  *                  calls main()).
-  *            After Reset the Cortex-M0+ processor is in Thread mode,
-  *            priority is Privileged, and the Stack is set to Main.
+  * @file           : main.c
+  * @brief          : Main program body
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2018-2021 STMicroelectronics.
+  * Copyright (c) 2025 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -176,277 +168,323 @@ This module also includes a potentiometer that will fix the threshold value, & t
   *
   ******************************************************************************
   */
+/* USER CODE END Header */
+/* Includes ------------------------------------------------------------------*/
+#include "main.h"
+#include "stdio.h"
 
-.syntax unified
-.cpu cortex-m0plus
-.fpu softvfp
-.thumb
+#if defined(__GNUC__)
 
-.global g_pfnVectors
-.global Default_Handler
+#define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
+#endif
+uint16_t readValue;
 
-/* start address for the initialization values of the .data section.
-defined in linker script */
-.word _sidata
-/* start address for the .data section. defined in linker script */
-.word _sdata
-/* end address for the .data section. defined in linker script */
-.word _edata
-/* start address for the .bss section. defined in linker script */
-.word _sbss
-/* end address for the .bss section. defined in linker script */
-.word _ebss
+/* Private includes ----------------------------------------------------------*/
+/* USER CODE BEGIN Includes */
 
-/**
- * @brief  This is the code that gets called when the processor first
- *          starts execution following a reset event. Only the absolutely
- *          necessary set is performed, after which the application
- *          supplied main() routine is called.
- * @param  None
- * @retval None
-*/
+/* USER CODE END Includes */
 
-  .section .text.Reset_Handler
-  .weak Reset_Handler
-  .type Reset_Handler, %function
-Reset_Handler:
-  ldr   r0, =_estack
-  mov   sp, r0          /* set stack pointer */
+/* Private typedef -----------------------------------------------------------*/
+/* USER CODE BEGIN PTD */
 
-/* Call the clock system initialization function.*/
-  bl  SystemInit
+/* USER CODE END PTD */
 
-/* Copy the data segment initializers from flash to SRAM */
-  ldr r0, =_sdata
-  ldr r1, =_edata
-  ldr r2, =_sidata
-  movs r3, #0
-  b LoopCopyDataInit
+/* Private define ------------------------------------------------------------*/
+/* USER CODE BEGIN PD */
 
-CopyDataInit:
-  ldr r4, [r2, r3]
-  str r4, [r0, r3]
-  adds r3, r3, #4
+/* USER CODE END PD */
 
-LoopCopyDataInit:
-  adds r4, r0, r3
-  cmp r4, r1
-  bcc CopyDataInit
+/* Private macro -------------------------------------------------------------*/
+/* USER CODE BEGIN PM */
 
-/* Zero fill the bss segment. */
-  ldr r2, =_sbss
-  ldr r4, =_ebss
-  movs r3, #0
-  b LoopFillZerobss
+/* USER CODE END PM */
 
-FillZerobss:
-  str  r3, [r2]
-  adds r2, r2, #4
+/* Private variables ---------------------------------------------------------*/
+ADC_HandleTypeDef hadc1;
 
-LoopFillZerobss:
-  cmp r2, r4
-  bcc FillZerobss
+UART_HandleTypeDef huart2;
 
-/* Call static constructors */
-  bl __libc_init_array
-/* Call the application s entry point.*/
-  bl main
+/* USER CODE BEGIN PV */
 
-LoopForever:
-  b LoopForever
+/* USER CODE END PV */
 
-.size Reset_Handler, .-Reset_Handler
+/* Private function prototypes -----------------------------------------------*/
+void SystemClock_Config(void);
+static void MX_GPIO_Init(void);
+static void MX_ADC1_Init(void);
+static void MX_USART2_UART_Init(void);
+/* USER CODE BEGIN PFP */
+
+/* USER CODE END PFP */
+
+/* Private user code ---------------------------------------------------------*/
+/* USER CODE BEGIN 0 */
+
+/* USER CODE END 0 */
 
 /**
- * @brief  This is the code that gets called when the processor receives an
- *         unexpected interrupt.  This simply enters an infinite loop, preserving
- *         the system state for examination by a debugger.
- *
- * @param  None
- * @retval None
-*/
-  .section .text.Default_Handler,"ax",%progbits
-Default_Handler:
-Infinite_Loop:
-  b Infinite_Loop
-  .size Default_Handler, .-Default_Handler
+  * @brief  The application entry point.
+  * @retval int
+  */
+int main(void)
+{
 
-/******************************************************************************
-*
-* The minimal vector table for a Cortex M0.  Note that the proper constructs
-* must be placed on this to ensure that it ends up at physical address
-* 0x0000.0000.
-*
-******************************************************************************/
-  .section .isr_vector,"a",%progbits
-  .type g_pfnVectors, %object
+  /* USER CODE BEGIN 1 */
 
-g_pfnVectors:
-  .word _estack
-  .word Reset_Handler
-  .word NMI_Handler
-  .word HardFault_Handler
-  .word 0
-  .word 0
-  .word 0
-  .word 0
-  .word 0
-  .word 0
-  .word 0
-  .word SVC_Handler
-  .word 0
-  .word 0
-  .word PendSV_Handler
-  .word SysTick_Handler
-  .word WWDG_IRQHandler                   /* Window WatchDog              */
-  .word PVD_IRQHandler                    /* PVD through EXTI Line detect */
-  .word RTC_TAMP_IRQHandler               /* RTC through the EXTI line    */
-  .word FLASH_IRQHandler                  /* FLASH                        */
-  .word RCC_IRQHandler                    /* RCC                          */
-  .word EXTI0_1_IRQHandler                /* EXTI Line 0 and 1            */
-  .word EXTI2_3_IRQHandler                /* EXTI Line 2 and 3            */
-  .word EXTI4_15_IRQHandler               /* EXTI Line 4 to 15            */
-  .word UCPD1_2_IRQHandler                /* UCPD1, UCPD2                 */
-  .word DMA1_Channel1_IRQHandler          /* DMA1 Channel 1               */
-  .word DMA1_Channel2_3_IRQHandler        /* DMA1 Channel 2 and Channel 3 */
-  .word DMA1_Ch4_7_DMAMUX1_OVR_IRQHandler /* DMA1 Channel 4 to Channel 7, DMAMUX1 overrun */
-  .word ADC1_COMP_IRQHandler              /* ADC1, COMP1 and COMP2         */
-  .word TIM1_BRK_UP_TRG_COM_IRQHandler    /* TIM1 Break, Update, Trigger and Commutation */
-  .word TIM1_CC_IRQHandler                /* TIM1 Capture Compare         */
-  .word TIM2_IRQHandler                   /* TIM2                         */
-  .word TIM3_IRQHandler                   /* TIM3                         */
-  .word TIM6_DAC_LPTIM1_IRQHandler        /* TIM6, DAC and LPTIM1         */
-  .word TIM7_LPTIM2_IRQHandler            /* TIM7 and LPTIM2              */
-  .word TIM14_IRQHandler                  /* TIM14                        */
-  .word TIM15_IRQHandler                  /* TIM15                        */
-  .word TIM16_IRQHandler                  /* TIM16                        */
-  .word TIM17_IRQHandler                  /* TIM17                        */
-  .word I2C1_IRQHandler                   /* I2C1                         */
-  .word I2C2_IRQHandler                   /* I2C2                         */
-  .word SPI1_IRQHandler                   /* SPI1                         */
-  .word SPI2_IRQHandler                   /* SPI2                         */
-  .word USART1_IRQHandler                 /* USART1                       */
-  .word USART2_IRQHandler                 /* USART2                       */
-  .word USART3_4_LPUART1_IRQHandler       /* USART3, USART4 and LPUART1   */
-  .word CEC_IRQHandler                    /* CEC                          */
+  /* USER CODE END 1 */
 
-  .size g_pfnVectors, .-g_pfnVectors
+  /* MCU Configuration--------------------------------------------------------*/
 
-/*******************************************************************************
-*
-* Provide weak aliases for each Exception handler to the Default_Handler.
-* As they are weak aliases, any function with the same name will override
-* this definition.
-*
-*******************************************************************************/
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+  HAL_Init();
 
-  .weak      NMI_Handler
-  .thumb_set NMI_Handler,Default_Handler
+  /* USER CODE BEGIN Init */
 
-  .weak      HardFault_Handler
-  .thumb_set HardFault_Handler,Default_Handler
+  /* USER CODE END Init */
 
-  .weak      SVC_Handler
-  .thumb_set SVC_Handler,Default_Handler
+  /* Configure the system clock */
+  SystemClock_Config();
 
-  .weak      PendSV_Handler
-  .thumb_set PendSV_Handler,Default_Handler
+  /* USER CODE BEGIN SysInit */
 
-  .weak      SysTick_Handler
-  .thumb_set SysTick_Handler,Default_Handler
+  /* USER CODE END SysInit */
 
-  .weak      WWDG_IRQHandler
-  .thumb_set WWDG_IRQHandler,Default_Handler
+  /* Initialize all configured peripherals */
+  MX_GPIO_Init();
+  MX_ADC1_Init();
+  MX_USART2_UART_Init();
+  /* USER CODE BEGIN 2 */
 
-  .weak      PVD_IRQHandler
-  .thumb_set PVD_IRQHandler,Default_Handler
+  /* USER CODE END 2 */
 
-  .weak      RTC_TAMP_IRQHandler
-  .thumb_set RTC_TAMP_IRQHandler,Default_Handler
+  /* Infinite loop */
+  /* USER CODE BEGIN WHILE */
+  while (1)
+  {
+    /* USER CODE END WHILE */
+	  HAL_ADC_Start(&hadc1);
+	 	  	 	  	  	  HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
+	 	  	 	  	  	  readValue = HAL_ADC_GetValue(&hadc1);
+	 	  	 	  	  	  printf("Read value : %d\n", readValue);
 
-  .weak      FLASH_IRQHandler
-  .thumb_set FLASH_IRQHandler,Default_Handler
+	 	  	 	  	  	  uint32_t soilmoist = 100 - (readValue / 40.96);
+	 	  	 	  	  	  printf("Soil moisture : %ld %%\n", soilmoist);
+	 	  	 	  	  	  HAL_Delay(1000);
 
-  .weak      RCC_IRQHandler
-  .thumb_set RCC_IRQHandler,Default_Handler
+    /* USER CODE BEGIN 3 */
+  }
+  /* USER CODE END 3 */
+}
+PUTCHAR_PROTOTYPE
+{
+	HAL_UART_Transmit(&huart2, (uint8_t *)&ch, 1, 0xFFFF);
 
-  .weak      EXTI0_1_IRQHandler
-  .thumb_set EXTI0_1_IRQHandler,Default_Handler
+   return ch;
+}
 
-  .weak      EXTI2_3_IRQHandler
-  .thumb_set EXTI2_3_IRQHandler,Default_Handler
+/**
+  * @brief System Clock Configuration
+  * @retval None
+  */
+void SystemClock_Config(void)
+{
+  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-  .weak      EXTI4_15_IRQHandler
-  .thumb_set EXTI4_15_IRQHandler,Default_Handler
+  /** Configure the main internal regulator output voltage
+  */
+  HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1);
 
-  .weak      UCPD1_2_IRQHandler
-  .thumb_set UCPD1_2_IRQHandler,Default_Handler
+  /** Initializes the RCC Oscillators according to the specified parameters
+  * in the RCC_OscInitTypeDef structure.
+  */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  RCC_OscInitStruct.HSIDiv = RCC_HSI_DIV1;
+  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  {
+    Error_Handler();
+  }
 
-  .weak      DMA1_Channel1_IRQHandler
-  .thumb_set DMA1_Channel1_IRQHandler,Default_Handler
+  /** Initializes the CPU, AHB and APB buses clocks
+  */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
 
-  .weak      DMA1_Channel2_3_IRQHandler
-  .thumb_set DMA1_Channel2_3_IRQHandler,Default_Handler
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+  {
+    Error_Handler();
+  }
+}
 
-  .weak      DMA1_Ch4_7_DMAMUX1_OVR_IRQHandler
-  .thumb_set DMA1_Ch4_7_DMAMUX1_OVR_IRQHandler,Default_Handler
+/**
+  * @brief ADC1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_ADC1_Init(void)
+{
 
-  .weak      ADC1_COMP_IRQHandler
-  .thumb_set ADC1_COMP_IRQHandler,Default_Handler
+  /* USER CODE BEGIN ADC1_Init 0 */
 
-  .weak      TIM1_BRK_UP_TRG_COM_IRQHandler
-  .thumb_set TIM1_BRK_UP_TRG_COM_IRQHandler,Default_Handler
+  /* USER CODE END ADC1_Init 0 */
 
-  .weak      TIM1_CC_IRQHandler
-  .thumb_set TIM1_CC_IRQHandler,Default_Handler
+  ADC_ChannelConfTypeDef sConfig = {0};
 
-  .weak      TIM2_IRQHandler
-  .thumb_set TIM2_IRQHandler,Default_Handler
+  /* USER CODE BEGIN ADC1_Init 1 */
 
-  .weak      TIM3_IRQHandler
-  .thumb_set TIM3_IRQHandler,Default_Handler
+  /* USER CODE END ADC1_Init 1 */
 
-  .weak      TIM6_DAC_LPTIM1_IRQHandler
-  .thumb_set TIM6_DAC_LPTIM1_IRQHandler,Default_Handler
+  /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
+  */
+  hadc1.Instance = ADC1;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV2;
+  hadc1.Init.Resolution = ADC_RESOLUTION_12B;
+  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
+  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  hadc1.Init.LowPowerAutoWait = DISABLE;
+  hadc1.Init.LowPowerAutoPowerOff = DISABLE;
+  hadc1.Init.ContinuousConvMode = ENABLE;
+  hadc1.Init.NbrOfConversion = 1;
+  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+  hadc1.Init.DMAContinuousRequests = DISABLE;
+  hadc1.Init.Overrun = ADC_OVR_DATA_PRESERVED;
+  hadc1.Init.SamplingTimeCommon1 = ADC_SAMPLETIME_1CYCLE_5;
+  hadc1.Init.SamplingTimeCommon2 = ADC_SAMPLETIME_1CYCLE_5;
+  hadc1.Init.OversamplingMode = DISABLE;
+  hadc1.Init.TriggerFrequencyMode = ADC_TRIGGER_FREQ_HIGH;
+  if (HAL_ADC_Init(&hadc1) != HAL_OK)
+  {
+    Error_Handler();
+  }
 
-  .weak      TIM7_LPTIM2_IRQHandler
-  .thumb_set TIM7_LPTIM2_IRQHandler,Default_Handler
+  /** Configure Regular Channel
+  */
+  sConfig.Channel = ADC_CHANNEL_0;
+  sConfig.Rank = ADC_REGULAR_RANK_1;
+  sConfig.SamplingTime = ADC_SAMPLINGTIME_COMMON_1;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN ADC1_Init 2 */
 
-  .weak      TIM14_IRQHandler
-  .thumb_set TIM14_IRQHandler,Default_Handler
+  /* USER CODE END ADC1_Init 2 */
 
-  .weak      TIM15_IRQHandler
-  .thumb_set TIM15_IRQHandler,Default_Handler
+}
 
-  .weak      TIM16_IRQHandler
-  .thumb_set TIM16_IRQHandler,Default_Handler
+/**
+  * @brief USART2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART2_UART_Init(void)
+{
 
-  .weak      TIM17_IRQHandler
-  .thumb_set TIM17_IRQHandler,Default_Handler
+  /* USER CODE BEGIN USART2_Init 0 */
 
-  .weak      I2C1_IRQHandler
-  .thumb_set I2C1_IRQHandler,Default_Handler
+  /* USER CODE END USART2_Init 0 */
 
-  .weak      I2C2_IRQHandler
-  .thumb_set I2C2_IRQHandler,Default_Handler
+  /* USER CODE BEGIN USART2_Init 1 */
 
-  .weak      SPI1_IRQHandler
-  .thumb_set SPI1_IRQHandler,Default_Handler
+  /* USER CODE END USART2_Init 1 */
+  huart2.Instance = USART2;
+  huart2.Init.BaudRate = 115200;
+  huart2.Init.WordLength = UART_WORDLENGTH_8B;
+  huart2.Init.StopBits = UART_STOPBITS_1;
+  huart2.Init.Parity = UART_PARITY_NONE;
+  huart2.Init.Mode = UART_MODE_TX_RX;
+  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  huart2.Init.ClockPrescaler = UART_PRESCALER_DIV1;
+  huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&huart2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_SetTxFifoThreshold(&huart2, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_SetRxFifoThreshold(&huart2, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_DisableFifoMode(&huart2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART2_Init 2 */
 
-  .weak      SPI2_IRQHandler
-  .thumb_set SPI2_IRQHandler,Default_Handler
+  /* USER CODE END USART2_Init 2 */
 
-  .weak      USART1_IRQHandler
-  .thumb_set USART1_IRQHandler,Default_Handler
+}
 
-  .weak      USART2_IRQHandler
-  .thumb_set USART2_IRQHandler,Default_Handler
+/**
+  * @brief GPIO Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_GPIO_Init(void)
+{
+  /* USER CODE BEGIN MX_GPIO_Init_1 */
 
-  .weak      USART3_4_LPUART1_IRQHandler
-  .thumb_set USART3_4_LPUART1_IRQHandler,Default_Handler
+  /* USER CODE END MX_GPIO_Init_1 */
 
-  .weak      CEC_IRQHandler
-  .thumb_set CEC_IRQHandler,Default_Handler
+  /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+
+  /* USER CODE BEGIN MX_GPIO_Init_2 */
+
+  /* USER CODE END MX_GPIO_Init_2 */
+}
+
+/* USER CODE BEGIN 4 */
+
+/* USER CODE END 4 */
+
+/**
+  * @brief  This function is executed in case of error occurrence.
+  * @retval None
+  */
+void Error_Handler(void)
+{
+  /* USER CODE BEGIN Error_Handler_Debug */
+  /* User can add his own implementation to report the HAL error return state */
+  __disable_irq();
+  while (1)
+  {
+  }
+  /* USER CODE END Error_Handler_Debug */
+}
+#ifdef USE_FULL_ASSERT
+/**
+  * @brief  Reports the name of the source file and the source line number
+  *         where the assert_param error has occurred.
+  * @param  file: pointer to the source file name
+  * @param  line: assert_param error line source number
+  * @retval None
+  */
+void assert_failed(uint8_t *file, uint32_t line)
+{
+  /* USER CODE BEGIN 6 */
+  /* User can add his own implementation to report the file name and line number,
+     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+  /* USER CODE END 6 */
+}
+#endif /* USE_FULL_ASSERT */
+
+
+
+
 ```
  
 ## Output  :
